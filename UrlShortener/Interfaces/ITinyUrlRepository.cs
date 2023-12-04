@@ -7,8 +7,8 @@ namespace UrlShortener.Interfaces
     {
         Task<bool> InsertAsync(TinyUrl tinyUrl, CancellationToken cancellationToken = default );
 
-        Task<string> GetLongUrlAsync(string shortCode, CancellationToken cancellationToken = default);
+        Task<TinyUrlDTO?> GetUrlAsync(string shortCode, CancellationToken cancellationToken = default);
+        Task<bool> ShortCodeExists(string shortCode);
 
-        Task<TinyUrlDTO> GetShortCodeAsync(string longUrl, CancellationToken cancellationToken = default);
     }
 }

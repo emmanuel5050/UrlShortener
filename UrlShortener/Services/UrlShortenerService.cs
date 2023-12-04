@@ -12,19 +12,17 @@ namespace UrlShortener.Services
     public class UrlShortenerService : IUrlShortenerService
     {
         private readonly ITinyUrlRepository _tinyUrlRepository;
-        private readonly UrlShortenerContext _context;
         private readonly IConfiguration _configuration;
-        public UrlShortenerService(ITinyUrlRepository tinyUrlRepository, UrlShortenerContext context, IConfiguration configuration)
+        public UrlShortenerService(ITinyUrlRepository tinyUrlRepository, IConfiguration configuration)
         {
             _tinyUrlRepository = tinyUrlRepository;
-            _context = context;
             _configuration = configuration;
         }
-        public async Task<string> GetLongUrlAsync(string shortCode, CancellationToken cancellationToken)
+        public async Task<BaseResponse<string>> GetLongUrlAsync(string shortCode, CancellationToken cancellationToken)
         {
-            var shortUrl = await _context.TinyUrls.FirstOrDefaultAsync(sc=>sc.ShortCode == shortCode);
-            if (shortUrl != null) return shortUrl.LongUrl;
-            return null;
+            var shortUrl = await _tinyUrlRepository.GetUrlAsync(shortCode, cancellationToken);
+            if (shortUrl != null) return new BaseResponse<string> { Data = shortUrl.LongUrl, Message = "long Url successfully retrieved", Status = true };
+            return new BaseResponse<string> { Data = null, Message = "Invalid shortcode", Status = false };
         }
         public async Task<BaseResponse<TinyUrlDTO>> GetTinyUrlAsync(string longUrl, CancellationToken cancellationToken)
         {
@@ -33,7 +31,7 @@ namespace UrlShortener.Services
             while(isFound)
             {
                 shortcode = GenerateRandomString(9);
-                isFound = await _context.TinyUrls.AnyAsync(x => x.ShortCode == shortcode);
+                isFound = await _tinyUrlRepository.ShortCodeExists(shortcode);
             }
             var saveUrlTodb = new TinyUrl { Id = Guid.NewGuid(), LongUrl = longUrl, ShortCode = shortcode, ShortUrl = GenerateUrl(shortcode)};
 

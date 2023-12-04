@@ -7,6 +7,6 @@ namespace UrlShortener.Interfaces
     {
         Task<BaseResponse<TinyUrlDTO>> GetTinyUrlAsync(string longUrl, CancellationToken cancellationToken = default);
 
-        Task<string> GetLongUrlAsync(string shortCode, CancellationToken cancellationToken = default);
+        Task<BaseResponse<string>> GetLongUrlAsync(string shortCode, CancellationToken cancellationToken = default);
     }
 }

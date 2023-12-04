@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Newtonsoft.Json;
 using UrlShortener.Context;
@@ -12,21 +13,30 @@ namespace UrlShortener.Services
     {
         private readonly UrlShortenerContext _context;
         private readonly IMemoryCache _memoryCache;
-        public TinyUrlRepository(UrlShortenerContext context, IMemoryCache memoryCache)
+        private readonly IMapper _mapper;
+        public TinyUrlRepository(UrlShortenerContext context, IMemoryCache memoryCache, IMapper mapper)
         {
             _context = context;
             _memoryCache = memoryCache;
+            _mapper = mapper;
         }
-        public async Task<string> GetLongUrlAsync(string shortCode, CancellationToken cancellationToken)
+        public async Task<TinyUrlDTO?> GetUrlAsync(string shortCode, CancellationToken cancellationToken)
         {
-            if (_memoryCache.TryGetValue(shortCode, out string longUrl))
+            if (_memoryCache.TryGetValue(shortCode, out string CachedUrlEntity))
             {
-                var tinyUrlDTO = JsonConvert.DeserializeObject<TinyUrlDTO>(longUrl);
-                return tinyUrlDTO.LongUrl;
+                var tinyUrlEntity = JsonConvert.DeserializeObject<TinyUrl>(CachedUrlEntity);
+                var tinyUrlDTO =_mapper.Map<TinyUrlDTO>(tinyUrlEntity);
+
+                return tinyUrlDTO;
             }
 
             var tinyUrl = await _context.TinyUrls.FirstOrDefaultAsync(x => x.ShortCode == shortCode, cancellationToken);
-            return tinyUrl?.LongUrl;
+            if (tinyUrl != null)
+            {
+                var tinyUrlDT = _mapper.Map<TinyUrlDTO>(tinyUrl);
+                return tinyUrlDT;
+            }
+            return null;          
         }
 
         public async Task<bool> InsertAsync(TinyUrl tinyUrl, CancellationToken cancellationToken)
@@ -37,9 +47,9 @@ namespace UrlShortener.Services
             return await _context.SaveChangesAsync(cancellationToken) > 0;
         }
 
-        Task<TinyUrlDTO> ITinyUrlRepository.GetShortCodeAsync(string longUrl, CancellationToken cancellationToken)
+        public Task<bool> ShortCodeExists(string shortCode)
         {
-            throw new NotImplementedException();
+            return _context.TinyUrls.AnyAsync(x => x.ShortCode == shortCode);
         }
     }
 }
